@@ -215,6 +215,12 @@ proc newWebSocket*(url: string): WebSocket =
 proc close*(ws: WebSocket, timeout = -1) {.raises: [].} =
   try:
     ws.send("", Close)
-    ws.socket.close()
+    var frame: Frame
+    try:
+      frame = ws.receiveFrame(timeout)
+    except:
+      discard
   except:
     discard
+  finally:
+    ws.socket.close()
