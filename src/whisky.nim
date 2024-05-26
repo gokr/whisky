@@ -13,17 +13,11 @@ type
     payload: string
 
   MessageKind* = enum
-    TextMessage, BinaryMessage, Ping, Pong
+    TextMessage, BinaryMessage, Close, Ping, Pong
 
   Message* = object
     kind*: MessageKind
     data*: string
-
-proc close*(ws: WebSocket) {.raises: [].} =
-  try:
-    ws.socket.close()
-  except:
-    discard
 
 proc receiveFrame(ws: WebSocket, timeout = -1): Frame =
   let b = ws.socket.recv(2, timeout)
@@ -147,6 +141,8 @@ proc send*(ws: WebSocket, data: sink string, kind = TextMessage) {.gcsafe.} =
       encodeFrame(0x1, data)
     of BinaryMessage:
       encodeFrame(0x2, data)
+    of Close:
+      encodeFrame(0x8, data)
     of Ping:
       encodeFrame(0x9, data)
     of Pong:
@@ -215,3 +211,10 @@ proc newWebSocket*(url: string): WebSocket =
 
   result = WebSocket()
   result.socket = client.getSocket()
+
+proc close*(ws: WebSocket, timeout = -1) {.raises: [].} =
+  try:
+    ws.send("", Close)
+    ws.socket.close()
+  except:
+    discard
