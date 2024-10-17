@@ -223,4 +223,7 @@ proc close*(ws: WebSocket, timeout = -1) {.raises: [].} =
   except:
     discard
   finally:
-    ws.socket.close()
+    try:
+      ws.socket.close()
+    except:
+      discard
