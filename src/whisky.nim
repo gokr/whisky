@@ -188,7 +188,7 @@ proc newWebSocket*(url: string, extraHeaders = newHttpHeaders()): WebSocket =
     headers[key] = value
 
   let
-    client = newHttpClient(headers = headers, sslContext = sslCtx)
+    client = newHttpClient(headers = headers)
     response = client.get($uri)
 
   if response.code != Http101:
