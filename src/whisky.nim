@@ -153,7 +153,7 @@ proc send*(ws: WebSocket, data: sink string, kind = TextMessage) {.gcsafe.} =
       encodeFrame(0xA, data)
   )
 
-proc newWebSocket*(url: string, caFilePath: string, extraHeaders = newHttpHeaders()): WebSocket =
+proc newWebSocket*(url: string, extraHeaders = newHttpHeaders()): WebSocket =
   ## Opens a new WebSocket connection.
   ##
   ## extraHeaders: Optional additional headers to include in the WebSocket handshake.
@@ -186,11 +186,6 @@ proc newWebSocket*(url: string, caFilePath: string, extraHeaders = newHttpHeader
   # Merge in extra headers
   for key, value in extraHeaders:
     headers[key] = value
-
-  var sslCtx: SslContext = nil
-  if caFilePath.len > 0:
-    sslCtx = net.newContext(caFile = caFilePath)
-    echo "USING SslContext with caFile: " & $caFilePath
 
   let
     client = newHttpClient(headers = headers, sslContext = sslCtx)
