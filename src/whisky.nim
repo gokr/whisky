@@ -21,6 +21,10 @@ type
 
 proc receiveFrame(ws: WebSocket, timeout = -1): Frame =
   let b = ws.socket.recv(2, timeout)
+
+  #if b.len == 0:
+  #  raise newException(CatchableError, "Connection closed")
+
   if b.len != 2:
     raise newException(CatchableError, "Error receiving WebSocket frame")
 
@@ -149,8 +153,11 @@ proc send*(ws: WebSocket, data: sink string, kind = TextMessage) {.gcsafe.} =
       encodeFrame(0xA, data)
   )
 
-proc newWebSocket*(url: string): WebSocket =
+proc newWebSocket*(url: string, caFilePath: string, extraHeaders = newHttpHeaders()): WebSocket =
   ## Opens a new WebSocket connection.
+  ##
+  ## extraHeaders: Optional additional headers to include in the WebSocket handshake.
+  ## For JWT authentication, pass: headers["Authorization"] = "Bearer <token>"
 
   var uri = parseUri(url)
   case uri.scheme
@@ -176,8 +183,17 @@ proc newWebSocket*(url: string): WebSocket =
   headers["Sec-WebSocket-Key"] = base64.encode(websocketKey)
   headers["Sec-WebSocket-Version"] = $13
 
+  # Merge in extra headers
+  for key, value in extraHeaders:
+    headers[key] = value
+
+  var sslCtx: SslContext = nil
+  if caFilePath.len > 0:
+    sslCtx = net.newContext(caFile = caFilePath)
+    echo "USING SslContext with caFile: " & $caFilePath
+
   let
-    client = newHttpClient(headers = headers)
+    client = newHttpClient(headers = headers, sslContext = sslCtx)
     response = client.get($uri)
 
   if response.code != Http101:
